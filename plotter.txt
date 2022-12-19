@@ -1,0 +1,3 @@
+set output "plot_sajatkod.png"
+set terminal png size 1000 1000
+plot "output_sajatkod.txt" u 1 t "kiemelés?" w l

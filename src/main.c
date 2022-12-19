@@ -8,6 +8,8 @@
 #include "wav_process.h"
 #include "helper_functions.h"
 
+#define CODE_LENGTH 32
+
 int main(int argc, char *argv[]) {
   FILE *fp_in = NULL, *fp_out = NULL;
   char *input_file_name;
@@ -56,30 +58,40 @@ int main(int argc, char *argv[]) {
   // extract info from header
     
     int bits_per_sample = header->header.bits_per_sample.short_value;
-    printf("\nBits per sample: %d\n",bits_per_sample);
-    
     double sample_rate = (double)header->header.sample_rate.int_value;
-    printf("\nSample rate: %lf\n",sample_rate);
-    
     int samples_per_symbol = (int)(sample_rate/bitrate);
-    printf("\nSamples per symbol: %d\n",samples_per_symbol);
-    
     int data_bytes = header->header.subchunk2_size.int_value;
-    printf("\nData length in bytes: %d\n",data_bytes);
-    
     int num_samples = data_bytes/(bits_per_sample/8);
-    printf("\nNumber of samples: %d\n",num_samples);
+    int num_symbols = num_samples/samples_per_symbol;
 
+    printf("\nBits per sample: %d\n",bits_per_sample);
+    printf("Sample rate: %lf\n",sample_rate);
+    printf("Samples per symbol: %d\n",samples_per_symbol);
+    printf("Data length in bytes: %d\n",data_bytes);
+    printf("Number of samples: %d\n",num_samples);
+    printf("Last Sample: %d\n",data[num_samples-1]);
+    printf("Number of symbols: %d\n",num_symbols);
     
-    printf("\nLast Sample: %d\n",data[num_samples-1]);
+    double original_code[CODE_LENGTH] = {1,1,1,1,1,1,0,1,0,1,1,0,1,1,0,1,0,0,0,1,1,1,0,0,1,1,1,0,1,0,0,0};
+    //double original_code[CODE_LENGTH] = {1,1,1,0,0,0,1,0,0,1,0};
+    double code[CODE_LENGTH]; // the original code in reverse
 
-
+    for(int i=0; i<CODE_LENGTH; i++)
+    {
+        code[i] = original_code[CODE_LENGTH-1-i]*2-1;
+        printf("%lf\n", code[i]);
+    }
 
   // convolution
-    int i;
-    for(i=0; i<num_samples; i+=samples_per_symbol)
+    int i, j, step=20;
+    double accu = 0.0;
+    for(i=0; i<num_samples-(CODE_LENGTH+1)*samples_per_symbol; i+=step)
     {
-        fprintf(fp_out, "%d\n", data[i]);
+        //fprintf(fp_out, "%d\n", data[i]);
+        accu = 0.0;
+        for(j=0; j<CODE_LENGTH; j++)
+            accu += data[i+j*samples_per_symbol]*code[j];
+        fprintf(fp_out, "%lf\n", accu);
     }
 
     
